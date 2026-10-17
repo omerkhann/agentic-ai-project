@@ -1,0 +1,17 @@
+# Data & secrets
+data/
+.env
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+# Results: keep JSON/PNG summaries, ignore large intermediates
+results/*.parquet
+results/llm_cache/
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
