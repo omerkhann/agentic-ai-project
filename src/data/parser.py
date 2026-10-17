@@ -10,6 +10,7 @@ materialised. Peak memory is about one row group.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from typing import Iterator, Optional
@@ -102,7 +103,8 @@ def parse_messages(messages: list[dict], *, uid: str, instance_id: str, run_id: 
                 tool = fn.get("name")
                 raw_args = fn.get("arguments")
                 atype, cmd, path = _classify(tool, _parse_args(raw_args))
-                pos = add(role=Role.assistant, action_type=atype, tool_name=tool, command=cmd, path=path,
+                sig = hashlib.md5(f"{tool}|{raw_args or ''}".encode()).hexdigest()[:12]
+                pos = add(role=Role.assistant, action_type=atype, tool_name=tool, command=cmd, path=path, args_sig=sig,
                           tokens=estimate_tokens(raw_args) + (estimate_tokens(content) if i == 0 else 0))
                 if tc.get("id"):
                     by_call_id[tc["id"]] = pos
@@ -137,7 +139,8 @@ def iter_traces(meta: pd.DataFrame, batch_size: int = 64, limit: Optional[int] =
                 if uids is not None and uid not in uids:
                     continue
                 yield parse_messages(msgs, uid=uid, instance_id=r["instance_id"], run_id=r["run_id"],
-                                     resolved=bool(r["resolved"]), final_patch=r["git_patch"] or "")
+                                     resolved=bool(r["resolved"]),
+                                     final_patch=r["git_patch"] if isinstance(r["git_patch"], str) else "")
                 n += 1
                 if limit is not None and n >= limit:
                     return

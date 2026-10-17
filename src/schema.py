@@ -44,6 +44,7 @@ class Step(BaseModel):
     tool_name: Optional[str] = None
     command: Optional[str] = None          # bash command, or editor sub-command
     path: Optional[str] = None             # editor target path
+    args_sig: Optional[str] = None         # short hash of tool name + raw arguments (repeat detection)
     exit_code: Optional[int] = None        # bash only, parsed from observation
     is_error: bool = False
     tokens: int = Field(0, ge=0)           # estimated tokens of the action text (chars/4)
