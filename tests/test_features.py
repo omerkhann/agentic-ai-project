@@ -1,5 +1,5 @@
 from src.data.parser import parse_messages
-from src.features import extract, patch_stats
+from src.features import extract, extract_task, patch_stats
 from tests.test_parser import MSGS, _call
 
 PATCH = """diff --git a/foo.py b/foo.py
@@ -31,3 +31,13 @@ def test_extract():
     assert f.n_edits_without_view == 1     # bar.py edited, only foo.py viewed
     assert f.ran_tests and f.finished and not f.patch_empty
     assert f.patch_lines == 2 and f.patch_files == 1
+
+
+def test_extract_task():
+    task = ("<uploaded_files>/workspace/x</uploaded_files>\n<pr_description>\nBug\n```python\nf()\n```\n"
+            "Traceback (most recent call last):\n  ...\n</pr_description>\nPlease fix.")
+    tr = parse_messages([{"role": "user", "content": task}], uid="u", instance_id="getmoto__moto-5321", run_id="r")
+    t = extract_task(tr)
+    assert t.repo == "getmoto__moto"
+    assert t.issue_code_blocks == 1 and t.issue_has_traceback
+    assert 0 < t.issue_tokens < len(task) // 4

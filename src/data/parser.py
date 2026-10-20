@@ -24,7 +24,7 @@ from src.schema import ActionType, Role, Step, Trace
 _EXIT_RE = re.compile(r"\[Command finished with exit code (-?\d+)\]")
 _RUNTIME_ERR = ("[Error occurred in processing last action]", "Action execution failed")
 _EDIT_CMDS = {"str_replace", "insert", "undo_edit"}
-TASK_CHARS = 4000
+TASK_CHARS = 16000
 
 
 def estimate_tokens(text: Optional[str]) -> int:

@@ -12,8 +12,10 @@ import pandas as pd
 
 from src import config
 from src.data.loader import load_meta
-from src.data.parser import iter_traces
-from src.schema import ActionType, Role, RunFeatures, Trace
+from src.data.parser import estimate_tokens, iter_traces
+from src.schema import ActionType, Role, RunFeatures, TaskFeatures, Trace
+
+_ISSUE_RE = re.compile(r"<pr_description>(.*?)(?:</pr_description>|$)", re.S)
 
 # Commands that execute tests (a test runner, or a test file run directly).
 _TEST_RE = re.compile(
@@ -74,6 +76,18 @@ def extract(trace: Trace) -> RunFeatures:
     )
 
 
+def extract_task(trace: Trace) -> TaskFeatures:
+    m = _ISSUE_RE.search(trace.task)
+    issue = m.group(1) if m else trace.task
+    return TaskFeatures(
+        uid=trace.uid,
+        repo=trace.instance_id.rsplit("-", 1)[0],
+        issue_tokens=estimate_tokens(issue),
+        issue_code_blocks=issue.count("```") // 2,
+        issue_has_traceback="Traceback (most recent call last)" in issue,
+    )
+
+
 def build_features(refresh: bool = False) -> pd.DataFrame:
     if config.FEATURES_PATH.exists() and not refresh:
         return pd.read_parquet(config.FEATURES_PATH)
@@ -81,7 +95,7 @@ def build_features(refresh: bool = False) -> pd.DataFrame:
     t0 = time.time()
     rows = []
     for i, tr in enumerate(iter_traces(meta), 1):
-        rows.append(extract(tr).model_dump())
+        rows.append(extract(tr).model_dump() | extract_task(tr).model_dump())
         if i % 1000 == 0:
             print(f"  features: {i}/{len(meta)} runs ({time.time() - t0:.0f}s)")
     df = pd.DataFrame(rows)
