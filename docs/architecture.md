@@ -39,12 +39,12 @@ signal, rank candidate runs (best-of-n), or flag runs that need human review.
                           ▼                                   │
           src/eval/splits.py   GroupKFold(instance_id) ──► data/eval_splits.parquet
                                                               │
-             ┌────────────────────────────┬──────────────────┼───────────────────────┐
-             ▼                            ▼                  ▼                       ▼
-  baselines/run_length.py     baselines/tabular.py   baselines/llm_judge.py   baselines/verifier_stub.py
-  (#steps only)               (LogReg, GBM)          (50-run sample,          (SWE-Gym 32B verifier,
-                                                      llm/provider.py)         Phase 2 on Kaggle)
-             └────────────────────────────┴──────────────────┴───────────────────────┘
+             ┌───────────────────────────────────────┼───────────────────────┐
+             ▼                                       ▼                       ▼
+  baselines/tabular.py                       baselines/llm_judge.py   baselines/verifier_stub.py
+  length_only · prompt_only ·                (zero-shot, 50-run       (SWE-Gym 32B verifier,
+  telemetry_lr · telemetry_gbm               sample, llm/provider.py)  Phase 2 on Kaggle)
+             └───────────────────────────────────────┴───────────────────────┘
                                           │ schema.Prediction rows
                                           ▼
                           src/eval/metrics.py + report.py
@@ -62,10 +62,11 @@ unless `--refresh` is passed.
 |---|---|
 | `Step` | one agent turn: `index`, `role`, `action_type` (`view`/`edit`/`create`/`bash`/`finish`/`think`/`message`/`observation`), `tool_name`, `command`, `path`, `exit_code`, `is_error`, `tokens` (estimate) |
 | `Trace` | `instance_id`, `run_id`, `resolved` (label, optional at inference), `steps: list[Step]`, `final_patch` |
-| `RunFeatures` | the fixed-width feature vector extracted from a `Trace` |
-| `JudgeVerdict` | structured LLM-judge output: `{p_success: float, rationale: str}`, validated from JSON |
-| `Prediction` | `run_id`, `instance_id`, `method`, `fold`, `p_success`, `label` |
-| `EvalReport` | metrics for one method, serialised to `results/metrics.json` |
+| `RunFeatures` | the fixed-width telemetry feature vector extracted from a `Trace` |
+| `TaskFeatures` | pre-execution task features (repo, issue length, code blocks, traceback), prompt-only baseline only |
+| `JudgeVerdict` | structured LLM-judge output: `{verdict: PASS/FAIL, confidence: 0-100, rationale}`, validated from JSON; `p_success` derived |
+| `Prediction` | `uid`, `instance_id`, `method`, `fold`, `p_success`, `label` |
+| `EvalReport` | metrics for one method on one eval set, serialised to `results/metrics.json` |
 
 Every module boundary passes these models (or DataFrames whose columns are exactly their fields),
 so a stage can be swapped without touching its neighbours.
@@ -81,7 +82,7 @@ There are two senses of "tool" here:
 2. **Model/provider interface used by this system.** `src/llm/provider.py` defines an abstract
    `LLMProvider.complete(messages, json_mode) -> str` with two implementations:
    - `OllamaProvider`: local, default `qwen2.5-coder:7b` (fits in 6 GB VRAM at Q4)
-   - `OpenAICompatProvider`: Groq or OpenRouter free tiers, with keys read from `.env`
+   - `OpenAICompatProvider`: Gemini (AI Studio), Groq or OpenRouter free tiers, with keys read from `.env`
 
    `get_provider()` picks the backend from `LLM_PROVIDER`. The SWE-Gym verifier sits behind a
    `Verifier` protocol (`baselines/verifier_stub.py`), so the Phase 2 Kaggle run can plug in.
@@ -89,8 +90,24 @@ There are two senses of "tool" here:
 ## Features (Phase 1)
 
 `n_steps`, `total_tokens`, `n_errors`, `n_repeated_commands`, `n_distinct_tools`,
-`n_edits_without_view`, `ran_tests`, `patch_lines` (+ `patch_files`, `patch_empty`).
+`n_edits_without_view`, `ran_tests`, `patch_lines` (+ `patch_files`, `patch_empty`, `finished`).
 Token counts are estimated as `chars / 4` because the dataset has no usage metadata.
+This is the Phase 1 subset of the proposal's 20-feature schema; prefix features (25/50/75%)
+come in Phase 2.
+
+## Baselines (Phase 1)
+
+| method | inputs | model |
+|---|---|---|
+| `length_only` | `n_steps`, `total_tokens` | LogReg on log1p |
+| `prompt_only` | `TaskFeatures` (issue length, code blocks, traceback, repo one-hot), no trajectory | LogReg |
+| `telemetry_lr` | all `RunFeatures` | LogReg on log1p, standardised |
+| `telemetry_gbm` | all `RunFeatures` | sklearn HistGradientBoosting |
+| `llm_judge` | issue + condensed action log + final patch | zero-shot LLM, 50-run sample |
+| `swegym_verifier_32b` | issue + trajectory + diff | stub; scores loaded from `data/verifier_scores.parquet` in Phase 2 |
+
+`prompt_only` gives every run of a task the same score, so its within-task AUROC is 0.5 by
+construction. It measures how much pooled AUROC comes from task difficulty alone.
 
 ## Evaluation protocol
 
@@ -102,10 +119,12 @@ Token counts are estimated as `chars / 4` because the dataset has no usage metad
   the pairwise accuracy over all same-task (pass, fail) pairs. This measures whether the predictor
   can **rank runs of the same task**, which is what best-of-n selection needs and what pooled AUROC
   conflates with task difficulty.
-- **Calibration:** Brier score, 10-bin expected calibration error, reliability diagram.
+- **Calibration:** Brier score, expected calibration error over 15 equal-mass bins, reliability diagram.
 - **Initial evaluation set:** the out-of-fold predictions on all 6,055 runs, plus a fixed 50-run
-  stratified sample (seeded, drawn from mixed tasks) for the LLM judge. Its ids are stored in
-  `data/eval_splits.parquet` and `results/llm_judge_sample.json` so later phases reuse the same set.
+  sample for the LLM judge: 25 mixed tasks drawn with a fixed seed, one resolved and one
+  unresolved run each, so it is label-balanced and yields 25 same-task pairs. Every method is also
+  scored on this sample. Its ids are stored in `data/eval_splits.parquet` and
+  `results/llm_judge_sample.json` so later phases reuse the same set.
 
 ## Constraints
 

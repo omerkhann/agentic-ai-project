@@ -6,7 +6,7 @@ Course project (AI4015, G2-09): predict SWE agent run success from OpenHands exe
 ## Environment
 - Python 3.11 venv at `.venv` (created with `uv venv --python 3.11`). Windows host.
 - Install: `uv pip install --python .venv -r requirements.txt`
-- Run all: `.venv/Scripts/python -m src.run_baseline` (add `--with-llm` for the LLM judge)
+- Run all: `.venv/Scripts/python -m src.run_baseline` (add `--with-llm` for the LLM judge; provider set in `.env`)
 - Tests: `.venv/Scripts/python -m pytest -q`
 
 ## Rules

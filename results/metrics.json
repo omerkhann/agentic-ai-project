@@ -1,0 +1,139 @@
+{
+ "generated": "2026-10-20",
+ "dataset": {
+  "rows": 6055,
+  "unique_run_configs": 9,
+  "runs_by_policy": {
+   "gpt-4o-2024-08-06": 5826,
+   "claude-3-5-sonnet-20241022": 229
+  },
+  "resolved_rate_by_policy": {
+   "claude-3-5-sonnet-20241022": 0.2926,
+   "gpt-4o-2024-08-06": 0.0728
+  },
+  "unique_instance_ids": 2438,
+  "resolved_rate": 0.0811,
+  "runs_per_instance": {
+   "mean": 2.48,
+   "median": 2.0,
+   "min": 1,
+   "max": 10
+  },
+  "instances_all_pass": 106,
+  "instances_all_fail": 2144,
+  "mixed_instances": 188,
+  "runs_in_mixed_instances": 1037,
+  "pass_fail_pairs_in_mixed": 1394
+ },
+ "telemetry_lr_coefficients": {
+  "patch_empty": -2.5041,
+  "n_distinct_tools": 1.3027,
+  "n_steps": -0.5408,
+  "patch_lines": -0.4759,
+  "n_repeated_commands": -0.1863,
+  "patch_files": 0.1322,
+  "total_tokens": -0.1062,
+  "n_errors": 0.0681,
+  "ran_tests": -0.0057,
+  "n_edits_without_view": 0.0015,
+  "finished": -0.0007
+ },
+ "reports": [
+  {
+   "method": "length_only",
+   "eval_set": "all",
+   "n_runs": 6055,
+   "pooled_auroc": 0.701828637985537,
+   "within_task_auroc": 0.8091822094691535,
+   "n_mixed_tasks": 188,
+   "n_pairs": 1394,
+   "brier": 0.07239479861215006,
+   "ece": 0.018802713707339255,
+   "base_rate": 0.08109000825763832
+  },
+  {
+   "method": "prompt_only",
+   "eval_set": "all",
+   "n_runs": 6055,
+   "pooled_auroc": 0.6403463273502483,
+   "within_task_auroc": 0.5,
+   "n_mixed_tasks": 188,
+   "n_pairs": 1394,
+   "brier": 0.07337863705693116,
+   "ece": 0.019558148839496876,
+   "base_rate": 0.08109000825763832
+  },
+  {
+   "method": "telemetry_lr",
+   "eval_set": "all",
+   "n_runs": 6055,
+   "pooled_auroc": 0.8390207780304283,
+   "within_task_auroc": 0.8536585365853658,
+   "n_mixed_tasks": 188,
+   "n_pairs": 1394,
+   "brier": 0.06540512093442986,
+   "ece": 0.004870607052497932,
+   "base_rate": 0.08109000825763832
+  },
+  {
+   "method": "telemetry_gbm",
+   "eval_set": "all",
+   "n_runs": 6055,
+   "pooled_auroc": 0.8385646892080454,
+   "within_task_auroc": 0.8436154949784792,
+   "n_mixed_tasks": 188,
+   "n_pairs": 1394,
+   "brier": 0.06697666740959164,
+   "ece": 0.020208883044009068,
+   "base_rate": 0.08109000825763832
+  },
+  {
+   "method": "length_only",
+   "eval_set": "judge_sample",
+   "n_runs": 50,
+   "pooled_auroc": 0.752,
+   "within_task_auroc": 0.72,
+   "n_mixed_tasks": 25,
+   "n_pairs": 25,
+   "brier": 0.3953506810826978,
+   "ece": 0.42055380295133427,
+   "base_rate": 0.5
+  },
+  {
+   "method": "prompt_only",
+   "eval_set": "judge_sample",
+   "n_runs": 50,
+   "pooled_auroc": 0.5,
+   "within_task_auroc": 0.5,
+   "n_mixed_tasks": 25,
+   "n_pairs": 25,
+   "brier": 0.42182238765508956,
+   "ece": 0.4119688064810149,
+   "base_rate": 0.5
+  },
+  {
+   "method": "telemetry_lr",
+   "eval_set": "judge_sample",
+   "n_runs": 50,
+   "pooled_auroc": 0.7888000000000001,
+   "within_task_auroc": 0.8,
+   "n_mixed_tasks": 25,
+   "n_pairs": 25,
+   "brier": 0.37274677735384437,
+   "ece": 0.39885581661707065,
+   "base_rate": 0.5
+  },
+  {
+   "method": "telemetry_gbm",
+   "eval_set": "judge_sample",
+   "n_runs": 50,
+   "pooled_auroc": 0.808,
+   "within_task_auroc": 0.8,
+   "n_mixed_tasks": 25,
+   "n_pairs": 25,
+   "brier": 0.3596826035593416,
+   "ece": 0.3920542696484168,
+   "base_rate": 0.5
+  }
+ ]
+}
