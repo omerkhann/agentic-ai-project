@@ -38,9 +38,9 @@ cp .env.example .env        # then pick a provider
 
 | `LLM_PROVIDER` | setup |
 |---|---|
-| `ollama` (default) | install [Ollama](https://ollama.com), then `ollama pull qwen2.5-coder:7b` (fits in 6 GB VRAM) |
-| `gemini` | free key from Google AI Studio in `GEMINI_API_KEY` |
-| `groq` / `openrouter` | free-tier key in `GROQ_API_KEY` / `OPENROUTER_API_KEY` |
+| `ollama` (default, used for the results below) | install [Ollama](https://ollama.com), then `ollama pull qwen2.5-coder:7b` (fits in 6 GB VRAM) |
+| `groq` / `openrouter` | open-weight models on free tiers; key in `GROQ_API_KEY` / `OPENROUTER_API_KEY` |
+| `gemini` | closed-weight fallback only; free key from Google AI Studio in `GEMINI_API_KEY` |
 
 The judge runs on a fixed 50-run sample and caches every reply in `data/llm_judge_cache.jsonl`.
 
@@ -116,7 +116,27 @@ Observations so far:
   0.4) while its ranking holds. That is prior shift: models fit to an 8% base rate are miscalibrated
   on a 50% one, the same problem the proposal attributes to the 50/50-trained SWE-Gym verifier.
 
-The LLM-judge row appears in `results/metrics.md` after a `--with-llm` run.
+### Zero-shot LLM judge (50-run sample)
+
+Qwen2.5-Coder-7B via Ollama, 0 parse failures, about 10 s per run on an RTX 4050. Every method
+scored on the same 50 runs (25 tasks, one resolved and one failed run each):
+
+| method | pooled AUROC | within-task AUROC | Brier | ECE |
+|---|---|---|---|---|
+| length_only | 0.752 | 0.720 | 0.3954 | 0.4206 |
+| prompt_only | 0.500 | 0.500 | 0.4218 | 0.4120 |
+| telemetry_lr | 0.789 | **0.800** | 0.3727 | 0.3989 |
+| telemetry_gbm | **0.808** | **0.800** | 0.3597 | 0.3921 |
+| llm_judge | 0.750 | 0.740 | **0.2594** | **0.2410** |
+
+- The judge is right on 35 of 50 runs (70%) but ranks runs worse than the telemetry models, at
+  about 10,000x the cost per run.
+- Its confidence is always between 90 and 100, including on the 15 runs it gets wrong. Its stated
+  confidence carries almost no information, so the score comes almost entirely from the PASS/FAIL verdict.
+- Its lower Brier and ECE here are not a calibration win. The sample is 50% resolved, and the judge
+  is not anchored to any base rate, while the trained models are calibrated to the real 8%. It calls
+  7 of 25 failed runs PASS; at the full dataset's 92% failure rate that would label roughly 3 in 10
+  runs PASS when only 8% actually succeed.
 
 ## Roadmap (Phase 2+)
 

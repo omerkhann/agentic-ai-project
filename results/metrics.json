@@ -38,6 +38,12 @@
   "n_edits_without_view": 0.0015,
   "finished": -0.0007
  },
+ "llm_judge": {
+  "provider": "ollama",
+  "model": "qwen2.5-coder:7b",
+  "parse_failures": 0,
+  "mean_latency_s": 10.02
+ },
  "reports": [
   {
    "method": "length_only",
@@ -133,6 +139,18 @@
    "n_pairs": 25,
    "brier": 0.3596826035593416,
    "ece": 0.3920542696484168,
+   "base_rate": 0.5
+  },
+  {
+   "method": "llm_judge",
+   "eval_set": "judge_sample",
+   "n_runs": 50,
+   "pooled_auroc": 0.7496,
+   "within_task_auroc": 0.74,
+   "n_mixed_tasks": 25,
+   "n_pairs": 25,
+   "brier": 0.25935,
+   "ece": 0.24099999999999994,
    "base_rate": 0.5
   }
  ]
