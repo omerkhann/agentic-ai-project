@@ -9,7 +9,7 @@ EvalReport     : metrics for one method
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -87,9 +87,30 @@ class RunFeatures(BaseModel):
         return [f for f in cls.model_fields if f not in {"uid", "instance_id", "resolved"}]
 
 
+class TaskFeatures(BaseModel):
+    """Pre-execution features of the task alone (no trajectory). Used only by the
+    prompt-only baseline, which measures how much signal is just task difficulty."""
+    uid: str
+    repo: str                     # from instance_id, e.g. "getmoto__moto"
+    issue_tokens: int             # estimated tokens of the PR/issue description
+    issue_code_blocks: int        # fenced ``` blocks in the issue
+    issue_has_traceback: bool
+
+    @classmethod
+    def numeric_names(cls) -> list[str]:
+        return ["issue_tokens", "issue_code_blocks", "issue_has_traceback"]
+
+
 class JudgeVerdict(BaseModel):
-    p_success: float = Field(ge=0.0, le=1.0)
+    """Structured LLM-judge output, validated from the model's JSON reply."""
+    verdict: Literal["PASS", "FAIL"]
+    confidence: int = Field(ge=0, le=100)   # confidence in the verdict, 0-100
     rationale: str = ""
+
+    @property
+    def p_success(self) -> float:
+        c = self.confidence / 100
+        return c if self.verdict == "PASS" else 1 - c
 
 
 class Prediction(BaseModel):
@@ -103,6 +124,7 @@ class Prediction(BaseModel):
 
 class EvalReport(BaseModel):
     method: str
+    eval_set: str = "all"         # "all" (out-of-fold, every run) or "judge_sample"
     n_runs: int
     pooled_auroc: Optional[float]
     within_task_auroc: Optional[float]
