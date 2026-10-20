@@ -1,5 +1,7 @@
 # TraceTrust-SE: Phase 1 baseline
 
+TraceTrust predicts whether a software-engineering agent’s run has succeeded, using only its execution trace. It converts raw agent logs (OpenHands, MoatlessTools) into a shared step schema, extracts telemetry features such as error loops, step counts and test behaviour, and trains lightweight classifiers that output a calibrated trust score with feature-level explanations. Following SWE-Gym (Pan et al., ICML 2025), it compares against the SWE-Gym 32B verifier, a zero-shot LLM judge and simple baselines. It reports within-task AUROC (separating passed and failed runs of the same task) alongside pooled AUROC and calibration error. A replay-mode governance agent uses the score to decide whether to continue, hint or stop a run.
+
 AI4015 Agentic AI, project **G2-09** (*Observability and Trust in Agentic AI for Software Engineering*).
 Muhammad Omer Khan (23I-0650). Base paper: SWE-Gym (Pan et al., ICML 2025).
 
